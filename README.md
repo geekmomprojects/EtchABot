@@ -1,4 +1,4 @@
-# etch-a-bot
+# EtchABot
 Description of and source software for the EtchABot drawing bot.  Instructions for assembly are at www.geekmomprojects.com
 
 The EtchABot Arduino library files are:
