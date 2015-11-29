@@ -1,0 +1,112 @@
+<html>
+<head>
+    <!--
+     * Author:      GeekMomProjects
+     * Contact:     debra@geekmomprojects.com
+     * Website:     http://www.geekmomprojects.com
+     * Twitter:     @geekmomprojects
+    -->
+    <title>Etch-a-Bot</title>
+    <style>	
+	text, label {
+		font-size: 20px;
+		font-family: arial;
+		align: center;
+	}
+	
+	select, input {
+		font-size: 15px;
+		font-family: arial;
+		align: center;
+	}
+	
+	.imDisplay {
+		width: 600px;
+		height: 400px;
+		text-align: center;
+		margin: 5px;
+		float: left;
+		border: 1px solid black;
+	}
+	
+	.svgDisplay {
+		width: 600px;
+		height: 400px;
+		text-align: center;
+
+	}
+	
+	.canvasStyle {
+		width: 600px;
+		height: 400px;
+		margin: 5px;
+		cursor : url('pencil.png'), auto;
+		float: left;
+		border: 1px solid black;
+	}
+	
+	.backlashInfo {
+		font-size: 15px;
+		font-family: arial;
+		border: 1px solid black;
+		padding: 0px;
+		margin: 10px;
+		text-align: center;
+		width: 120px;
+		float: left;
+	}
+	
+	.plain {
+		clear: both;
+	}
+	
+
+
+	</style>	
+</head>
+
+<body>
+    <div id="modeselect" class="plain">
+		<label for="drawMode">Select mode:</label>
+		<select name="drawMode" id="drawMode">
+			<option value="draw" selected>Freehand Draw</option>
+			<option value="image">Load Image</option>
+		</select> &nbsp; &nbsp;
+		<input type="button" value="Erase Last" id="eraseLast" />
+		<input type="button" value="Erase Canvas" id="erase" />
+
+		<div id="filechooser">
+			<input type="file" id="files" name="files[]" accept=".jpg,.png,.gif,.bmp,.svg" />
+			<output id="filename"></output>
+		</div>
+	</div>
+	<div id="imageDisplay" class="imDisplay"></div>
+	<canvas id="theCanvas" width="600px" height="400px" class="canvasStyle"></canvas>
+	<div id="backlashDiv" class="backlashInfo">
+		<p id="etchSize"></p>
+		<p><h4>Backlash</h4></p>
+		<p id="xBacklash"> Horz: ?</p>
+		<p id="yBacklash"> Vert: ?</p>
+		<p>
+		<input type="button" value="Set backlash" id="setBacklash" />
+		</p>
+	</div>
+	<BR>
+	<div id="buttonDiv" class="plain">
+		<p>
+		<input type="button" value="Image to Data" id="imToData" />
+		<input type="button" value="Send To Etch-a-Sketch" id="sendData" disabled="true"  />
+		</p>
+	</div>
+
+	<div id="textAreaDiv">
+	<textarea id="sentText" cols="20" rows="16" >Commands To Send</textArea>
+	&nbsp;&nbsp;&nbsp;
+	<textarea id="receivedText" cols="40" rows="16">Received Response</textarea>
+	</div>
+	
+	<script src="socket.io/socket.io.js"></script>
+	<script src="js/app.js"></script>
+
+</body>
+</html>

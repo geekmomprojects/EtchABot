@@ -1,0 +1,16 @@
+EtchABot	KEYWORD1
+doErase	KEYWORD2
+drawLine	KEYWORD2
+drawArc	KEYWORD2
+getX	KEYWORD2
+getY	KEYWORD2
+getMaxX	KEYWORD2
+getMaxY	KEYWORD2
+getHBacklash	KEYWORD2
+getVBacklash	KEYWORD2
+setHBacklash	KEYWORD2
+setVBacklash	KEYWORD2	
+turnOffMotors	KEYWORD2
+turnOffEraseMotor	KEYWORD2
+turnOffHorzMotor	KEYWORD2
+turnOffVertMotor	KEYWORD2

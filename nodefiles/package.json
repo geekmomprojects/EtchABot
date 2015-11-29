@@ -1,0 +1,23 @@
+{
+  "name": "etchabot",
+  "version": "1.0.0",
+  "description": "EtchABot image drawing applicatoin",
+  "main": "Server\\server.js",
+  "scripts": {
+    "start":"node .\\Server\\server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/geekmomprojects/EtchABot.git"
+  },
+  "author": "GeekMomProjects <debra@geekmomprojects.com>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/geekmomprojects/EtchABot/issues"
+  },
+  "homepage": "https://github.com/geekmomprojects/EtchABot#readme",
+  "dependencies": {
+    "serialport": "^2.0.5"
+  }
+}
