@@ -15,3 +15,5 @@ Example Arduino sketches in "examples" folder.  They are:
 (5) EtchABotPatterns - draws parametric patterns (Lissajous or Spirograph), erases and restarts with different parameters every few minutes.
 
 The SVG files for lasercut wood parts are in the "design" folder.  Parts are intended to be cut from 1/8" MDF or similar wood.
+
+The nodefiles folder contains Node.js and javascript/HTML files to run an app to send images to the EtchABot through the serial port while it is running EtchABot driver.  This software is still a work in progress, however, to start the program, go to the "nodefiles" directory in a shell, and type "npm start -- portname" where portname is the name of the serial port the Arduino is attached to.  Then open a browswer window and type "localhost:8000" as the URL to run the program.
