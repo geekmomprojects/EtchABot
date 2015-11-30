@@ -2,7 +2,7 @@
   "name": "etchabot",
   "version": "1.0.0",
   "description": "EtchABot image drawing applicatoin",
-  "main": "Server\\server.js",
+  "main": "server\\server.js",
   "scripts": {
     "start":"node .\\Server\\server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
