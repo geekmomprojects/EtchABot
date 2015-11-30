@@ -63,7 +63,7 @@ var onClickErase = function(canvas, canvasPoints) {
 
 var onClickEraseLast = function(canvas, canvasPoints) {
 	return function(e) {
-		if (canvasPoints.length > 1 ) {
+		if (canvasPoints.clickX.length > 1 ) {
 			canvasPoints.clickX.pop();
 			canvasPoints.clickY.pop();
 			canvasPoints.drawPoints(canvas);
@@ -168,11 +168,7 @@ var onFileSelect = function(img) {
 					var h = toPixels(svg.getAttribute("height"));
 					svg.setAttribute('viewBox', '0 0 ' + parseInt(w) + ' ' + parseInt(h));
 				}
-				//svg.setAttribute('class', "imDisplay");
 				svg.setAttribute('class', "svgDisplay");
-				//var box = svg.getBBox();
-				//alert("x, y, w, h = " + box.x + ", " + box.y + ", " + box.width + ", " + box.height);
-				//svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
 			}
 			reader.readAsText(file);
 		} else {
@@ -280,17 +276,18 @@ var convertAllPolysToPaths = function() {
 	}
 }
 
+// Appends points in current node and its children to coordList - a list of [x,y]
+// coordinate pairs.  Returns a bounding box with min/max x,y values of the node points.
+var nodeToCoords = function(node, coordList, hOffset, vOffset) {
 
-var nodeToCmdList = function(node, scaleFactor, cmdList) {
-	allPoints = "";
 	var children = node.childNodes;
 	for (var i = children.length-1; i >= 0; i--) {
 		var child = children[i];
 		if (child.nodeType != 1) continue; // skip anything that isn't an element
-		parent = child.parentNode;
+		var parent = child.parentNode;
 		switch(child.nodeName) {
-			case 'g':  // Recursively blow out child nodes that are groups - may not work with transforms
-				allPoints += nodeToCmdList(child, scaleFactor, cmdList);
+			case 'g':  // Recursively expand child nodes that are part of groups
+				nodeToCoords(child, coordList, hOffset, vOffset);
 				break;
 			case 'circle':
 			case 'eclipse':
@@ -305,47 +302,96 @@ var nodeToCmdList = function(node, scaleFactor, cmdList) {
 				var CTM = child.getScreenCTM();
 				// p0 = SVG coords, p = screen coords
 				var p0, p; 
-				var stp = "";
-				// The smaller the spacing the closer the sampling points we take along the path
+				// Eventually should put in variable spacing for smaller SVGs
 				var spacing = 1;
+				if (len < 50) spacing = len/100.0;  // Scale down for small scale SVGs
 				for (var j = 0; j < len; j += spacing) {
 					p0 = child.getPointAtLength(j);
 					p = p0.matrixTransform(CTM);
-					stp += (" " + p0.x + "," + p0.y);
-					cmdList.push(makeCmdString('L', p.x*scaleFactor, p.y*scaleFactor));
+					// Must subtract out window origin
+					p.x -= hOffset;
+					p.y -= vOffset;
+					coordList.push([p.x, p.y]);
 				}
-				allPoints += (" " + stp);
 				parent.removeChild(child);
 				break;
 		}
 	}
-	return allPoints;
+}
+
+// Helper function to return the border width of a page element
+var getBorderWidth = function(el) {
+	var border = getComputedStyle(el, null).border;
+	var parts = border.split(' ');
+	for (i = 0; i < parts.length; i++) {
+		if (parts[i].indexOf('px') > 0) {
+			return parseInt(parts[i]);
+		}
+	}
 }
 
 // Converts the current SVG to a list of drawing commands for the etch a sketch
 var svgToCmdList = function(svg, display, cmdList) {
-	var svgNS = "http://www.w3.org/2000/svg"; 
+
+	// Get canvas and context for drawing
+	// Scale to fit inside the div box - first get div box dimensions
+	var disp = document.getElementById('imageDisplay');
+	var style = getComputedStyle(disp);
+	var hDiv = parseInt(style.getPropertyValue("height"));
+	var wDiv = parseInt(style.getPropertyValue("width"));
+	
+	// Find origin of image display relative to page
+	var boundingRect = disp.getBoundingClientRect();
+	var borderWidth  = getBorderWidth(disp);
+	var offsetX = boundingRect.left + borderWidth;
+	var offsetY = boundingRect.top + borderWidth;
+	
+	
+
 	// Reset the cmdlist
 	cmdList.length = 0;
-	var allPoints = "0 0";    // Starts drawing at origin
-	cmdList.push('E');  // Start by erasing Etch-a-sketch
-	cmdList.push('L 0 0');
+	cmdList.push('E');  // Start drawing commands by erasing Etch-a-sketch
+	cmdList.push('M 0 0');  // Go to origin
 	
+	// Get scale factor between display and Etch A Sketch coordinates
 	var scaleFactor = getScaleFactor(display);
-	allPoints += nodeToCmdList(svg, scaleFactor, cmdList);
+	//alert("ScaleFactor = " + scaleFactor);
+	
+	// Compute the new screen coords
+	var screenCoords = [];
+	nodeToCoords(svg, screenCoords, offsetX, offsetY);
+	
+	// Comvert screen coords to command list
+	for (var i = 0; i < screenCoords.length; i++) {
+		cmdList.push(makeCmdString('L', screenCoords[i][0]*scaleFactor, screenCoords[i][1]*scaleFactor));
+	}
+	
+	// Get new drawing context and canvas
+	disp.innerHTML =  "";
+	var canvas = document.createElement('canvas');
+	canvas.width = wDiv;
+	canvas.height = hDiv;
+	disp.appendChild(canvas);
+	var ctx = canvas.getContext("2d");
+	
 
 	// Last command returns pen to origin - may want to take a cleaner route back (TBD???)
 	cmdList.push(makeCmdString('L', 0, 0)); 
 	cmdList.push('O EHV');  // Turn off motors when done
 	
-	// Replace the current paths with a single, black line with no fill
-	var myPath = document.createElementNS(svgNS, "polyline");
-	myPath.setAttributeNS(null, "fill", "#FFFFFF");
-	myPath.setAttributeNS(null, "stroke", "#000000");
-	myPath.setAttributeNS(null, "stroke-width", "0.5");
-	myPath.setAttributeNS(null, "points", allPoints);
-	parent.appendChild(myPath);
 	
+	// Draw the lines from the command list
+	ctx.clearRect(0, 0, canvas.width, canvas.height);
+	ctx.beginPath();
+	ctx.moveTo(0, 0);
+	for (var i = 0; i < screenCoords.length; i++) {
+		var p = screenCoords[i];
+		ctx.lineTo(Math.round(p[0]), Math.round(p[1]));
+	}	
+	ctx.lineWidth = 0.5;
+	ctx.strokeStyle = 'Black';
+	ctx.stroke();
+
 	return cmdList.length;
 }
 
@@ -557,19 +603,33 @@ var imgToCmdList = function(img, display, cmdList) {
 	var hDiv = parseInt(style.getPropertyValue("height"));
 	var wDiv = parseInt(style.getPropertyValue("width"));
 	
-	// Display the grayscale image, using a context to scale it up without interpolation
+	// Get drawing context of the canvas
 	disp.innerHTML =  "";
 	var canvas = document.createElement('canvas');
 	canvas.width = wDiv;
 	canvas.height = hDiv;
 	disp.appendChild(canvas);
 	var ctx = canvas.getContext("2d");
+	
+	// Let user know they might wait while converting image to commands
+	ctx.font = "40px Arial";
+	ctx.fillStyle = "red";
+	ctx.textAlign = "center";
+	ctx.fillText("Please wait.  Converting image...", canvas.width/2, canvas.height/2); 
+	
+	// Convert image to list of commands
+	imgToCmds(img, display, cmdList);
+	
+	// Draw pixelated grayscale image
+	// Use a context to scale it up without interpolation
 	ctx.imageSmoothingEnabled = false;
 	ctx.webkitImageSmoothingEnabled = false;
 	ctx.mozImageSmoothingEnabled = false;
+	
+	ctx.clearRect(0, 0, canvas.width, canvas.height);
 	ctx.drawImage(img, (wDiv - img.width)/2 , (hDiv - img.height)/2, img.width, img.height);
-	imgToCmds(img, display, cmdList);
-
+	
+	// return
 	return cmdList.length;
 }
 
@@ -577,6 +637,8 @@ var imgToCmdList = function(img, display, cmdList) {
 var convertToData = function(img, points, cmdList, display) {
 	return function(evt) {
 		var nPts = 0;
+		
+		// Warn user about wait - this might take a while
 		if (getDisplayMode() == "draw") {
 			nPts = pointsToCmdList(points, display, cmdList);
 		} else if (isDisplayingSVG(display)) {
@@ -586,7 +648,7 @@ var convertToData = function(img, points, cmdList, display) {
 		} else {
 			alert("No image to convert yet");
 		}
-		
+
 		// Set the value of the textarea to the drawing instructions
 		var cmdString = "";
 		for (var i = 0; i < cmdList.length; i++) {
