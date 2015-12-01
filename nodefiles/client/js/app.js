@@ -18,10 +18,17 @@ return cmd + ' ' + Math.round(x) + ' ' + Math.round(y);
 // Canvas drawing functions
 
 // Scope preserving wrapper for canvas callback function
+var onCanvasMouseClick = function(canvasPoints) {
+	return function(e) {
+		canvasPoints.addPoint(e.pageX - this.offsetLeft, e.pageY - this.offsetTop);
+		canvasPoints.drawPoints(this);
+	}
+}
+
+// Scope preserving wrapper for canvas callback function
 var onCanvasMouseDown = function(canvasPoints) {
 	return function(e) {
 		canvasPoints.setPaint(true);
-		canvasPoints.addPoint(e.pageX - this.offsetLeft, e.pageY - this.offsetTop);
 		canvasPoints.drawPoints(this);
 	}
 }
@@ -51,11 +58,10 @@ var onCanvasMouseLeave = function(canvasPoints) {
 	}
 }
 
-// Scope preserving wrapper for canvas callback function
+// Scope preserving wrapper for canvas callback functions
 var onClickErase = function(canvas, canvasPoints) {
 	return function(e) {
-		canvasPoints.clickX = [0];
-		canvasPoints.clickY = [0];
+		canvasPoints.reset();
 		canvasPoints.setPaint(false);
 		canvasPoints.drawPoints(canvas);
 	}
@@ -63,9 +69,8 @@ var onClickErase = function(canvas, canvasPoints) {
 
 var onClickEraseLast = function(canvas, canvasPoints) {
 	return function(e) {
-		if (canvasPoints.clickX.length > 1 ) {
-			canvasPoints.clickX.pop();
-			canvasPoints.clickY.pop();
+		if (canvasPoints.nPoints() > 1 ) {
+			canvasPoints.popPoint();
 			canvasPoints.drawPoints(canvas);
 		}
 	}
@@ -73,11 +78,11 @@ var onClickEraseLast = function(canvas, canvasPoints) {
 
 // Check for integer.  Function lifted from:
 // http://stackoverflow.com/questions/14636536/how-to-check-if-a-variable-is-an-integer-in-javascript
-
 function isInt(value) {
   return !isNaN(value) && (function(x) { return (x | 0) === x; })(parseFloat(value))
 }
 
+// Helper function for setting backlash to valid values
 function validateBacklashValue(val, min, max) {
 	if (isInt(val) && val >= min && val <= max) return true;
 	else return false;
@@ -230,6 +235,9 @@ function getIntegersFromString(str) {
 	return numList;
 }
 
+var drawStylusPosition = function(data) {
+}
+
 // Event handler for data received from server
 var onSocketNotification = function(display) {
 	return function(data) {
@@ -252,7 +260,11 @@ var onSocketNotification = function(display) {
 			}
 		} else if (cmd == 's') {	// Receiving size info
 			document.getElementById('etchSize').innerHTML = "<h4>Etch A Sketch</h4>" + data.substring(2);
-		}	
+		}	else if (cmd == 'L' || cmd == 'M' || cmd == 'l' || cmd == 'm') {
+			// Mark the currently drawn line in red if we're drawing an svg or the currently
+			// drawn pixel if it is an image.
+			drawStylusPosition(data);
+		}
 		document.getElementById('receivedText').value += ('\n' + data);
 		//alert(data);
 	}
@@ -345,8 +357,6 @@ var svgToCmdList = function(svg, display, cmdList) {
 	var borderWidth  = getBorderWidth(disp);
 	var offsetX = boundingRect.left + borderWidth;
 	var offsetY = boundingRect.top + borderWidth;
-	
-	
 
 	// Reset the cmdlist
 	cmdList.length = 0;
@@ -373,12 +383,10 @@ var svgToCmdList = function(svg, display, cmdList) {
 	canvas.height = hDiv;
 	disp.appendChild(canvas);
 	var ctx = canvas.getContext("2d");
-	
 
 	// Last command returns pen to origin - may want to take a cleaner route back (TBD???)
 	cmdList.push(makeCmdString('L', 0, 0)); 
-	cmdList.push('O EHV');  // Turn off motors when done
-	
+	cmdList.push('O EHV');  // Turn off motors when done	
 	
 	// Draw the lines from the command list
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -639,14 +647,15 @@ var convertToData = function(img, points, cmdList, display) {
 		var nPts = 0;
 		
 		// Warn user about wait - this might take a while
-		if (getDisplayMode() == "draw") {
+		if (getDisplayMode() == "draw"  && points.nPoints() > 1) {
 			nPts = pointsToCmdList(points, display, cmdList);
 		} else if (isDisplayingSVG(display)) {
 			nPts = svgToCmdList(document.getElementsByTagName('svg')[0], display, cmdList);
-		} else if (img.complete) {
+		} else if (img.src != "" && img.complete) {
 			nPts = imgToCmdList(img, display, cmdList);
 		} else {
-			alert("No image to convert yet");
+			alert("Nothing in display area");
+			return;
 		}
 
 		// Set the value of the textarea to the drawing instructions
@@ -655,7 +664,9 @@ var convertToData = function(img, points, cmdList, display) {
 			cmdString += (cmdList[i] + '\n');
 		}
 		document.getElementById('sentText').value = "Commands to Send\n" + cmdString;
-		if (nPts > 0) document.getElementById('sendData').disabled = false;
+		if (nPts > 0) {
+			document.getElementById('sendData').disabled = false;
+		}
 	}
 }
 
@@ -702,13 +713,22 @@ window.onload = function () {
 			ctx.stroke();
 			ctx.closePath();				
 		},
-		addPoint : function(x, y) { this.clickX.push(x); this.clickY.push(y); },
+		// Only add new point if it differs from the last one
+		addPoint : function(x, y) { if (x != this.clickX[this.nPoints()-1] || y != this.clickY[this.nPoints()-1]) {
+									   this.clickX.push(x); 
+									   this.clickY.push(y); 
+								       }
+								  },		
 		clearPoints : function() { this.clickX = [0]; this.clickY = [0]; this.paint = false; },
+		nPoints : function() { return this.clickX.length; },
+		popPoint : function() { return [this.clickX.pop(), this.clickY.pop()];},
+		reset : function() { this.clickX = [0]; this.clickY = [0]; },
 		setPaint : function(p) { this.paint = p; }
 	};	
 	
 	// Register some listeners for the canvas and the erase button
 	var canvas = document.getElementById('theCanvas');
+	canvas.addEventListener('click', onCanvasMouseClick(canvasPoints));
 	canvas.addEventListener('mousedown', onCanvasMouseDown(canvasPoints));
 	canvas.addEventListener('mouseup', onCanvasMouseUp(canvasPoints));
 	canvas.addEventListener('mousemove', onCanvasMouseMove(canvasPoints));
