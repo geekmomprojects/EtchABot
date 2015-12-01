@@ -41,7 +41,7 @@ byte writePtr = 0;
 
 // Create EtchABot object with default pin assignments.  Please specify TRAVEL_SIZE
 //  or POCKET_SIZE as is appropriate in the constructor below
-EtchABot etch(TRAVEL_SIZE);
+EtchABot etch(POCKET_SIZE);
 
 
 // Returns true if there is space in the buffer to write a new command
@@ -182,14 +182,14 @@ void doNextCmd() {
   readPtr = (readPtr + 1) % BUFFER_SIZE;
   if (spaceInBuffer()) Serial.println("OK");
     
-  Serial.print("#cmd: ");
+  Serial.print("#");
   Serial.print(cmd);
   if (cmd == 'E') {
     Serial.println("");
   } else {
-    Serial.print(", x:");
+    Serial.print(" ");
     Serial.print(x);
-    Serial.print(", y:");
+    Serial.print(" ");
     Serial.println(y);
   }
 }
