@@ -236,6 +236,9 @@ function getIntegersFromString(str) {
 }
 
 var drawStylusPosition = function(data) {
+	// Get the context to draw the line at
+	var imDisp = document.getElementById('imDisplay');
+	
 }
 
 // Event handler for data received from server
@@ -467,6 +470,8 @@ function makeGrayscaleImage(im) {
 			imgPixels.data[i] = avg;
 			imgPixels.data[i+1] = avg;
 			imgPixels.data[i+2] = avg;
+			// Eliminate transparency in alpha channel
+			imgPixels.data[i+3] = 255;
 		}
 	}
 
@@ -495,8 +500,18 @@ var imgToCmds = function(img, display, cmdList) {
 	var imgPixels = context.getImageData(0, 0, w, h);
 	
 	// Find the max/min image intensity values
-	var inMax = Math.max.apply(null, imgPixels.data);
-	var inMin = Math.min.apply(null, imgPixels.data);
+	var inMax = imgPixels.data[0];
+	var inMin = imgPixels.data[0];
+	var nPixels = w*h;
+	for (var i = 1; i < nPixels; i++) {
+		var pixVal = imgPixels.data[i*4];
+		if (pixVal > inMax) {
+			inMax = pixVal;
+		} else {
+			inMin = pixVal;
+		}
+	}
+	// Get range of values
 	var inRange = inMax - inMin;
 	//alert("Max = " + inMax + "  Min = " + inMin);
 
@@ -654,7 +669,7 @@ var convertToData = function(img, points, cmdList, display) {
 		} else if (img.src != "" && img.complete) {
 			nPts = imgToCmdList(img, display, cmdList);
 		} else {
-			alert("Nothing in display area");
+			alert("No drawing in display area");
 			return;
 		}
 
@@ -737,8 +752,7 @@ window.onload = function () {
 	document.getElementById('erase').addEventListener('click', onClickErase(canvas, canvasPoints));
 
 	// Start in drawing mode
-	setDrawMode();
-	
+	setDrawMode();	
 	
 	// Register event listener for the select element
 	document.getElementById('drawMode').addEventListener('change', switchModes);
