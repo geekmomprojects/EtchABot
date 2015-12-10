@@ -466,12 +466,17 @@ function makeGrayscaleImage(im) {
 	for (var y = 0; y < h; y++) {
 		for (var x = 0; x < w; x++) {
 			var i = (y*4) * w + x*4;
-			var avg = (imgPixels.data[i] + imgPixels.data[i+1] + imgPixels.data[i+2])/3;
+			var avg;
+			if (imgPixels.data[i+3] == 0) {
+				avg = 0;  // If completely transparent, should appear white
+			} else {
+				avg = (imgPixels.data[i] + imgPixels.data[i+1] + imgPixels.data[i+2])/3;
+			}
 			imgPixels.data[i] = avg;
 			imgPixels.data[i+1] = avg;
 			imgPixels.data[i+2] = avg;
 			// Eliminate transparency in alpha channel
-			imgPixels.data[i+3] = 255;
+			//imgPixels.data[i+3] = 255;
 		}
 	}
 
@@ -507,7 +512,7 @@ var imgToCmds = function(img, display, cmdList) {
 		var pixVal = imgPixels.data[i*4];
 		if (pixVal > inMax) {
 			inMax = pixVal;
-		} else {
+		} else if (pixVal < inMin) {
 			inMin = pixVal;
 		}
 	}
@@ -551,7 +556,7 @@ var imgToCmds = function(img, display, cmdList) {
 	// Iterate over rows
 	for (var j = 0; j < h; j++) {
 	
-		if ((j%2) == 0) direction = LEFT_TO_RIGHT;  // First row is alwyas left to right
+		if ((j%2) == 0) direction = LEFT_TO_RIGHT;  // First row is always left to right
 		else direction = RIGHT_TO_LEFT;
 		
 		var rowBaseY = starty + j*scaleFactor;  // Y-coordinate of row base
@@ -574,14 +579,16 @@ var imgToCmds = function(img, display, cmdList) {
 		// Traverse the row
 		for (var i = 0; i < w; i++) {
 			var val = rowPixels[i];
-			var intensity = (inMax - val)/inRange;
+			var intensity = (inMax - val)/inRange;		// White (hightest val) gets smallest jitter
 			var jitter = Math.round(maxStrokes*intensity);
+			//alert("j = " + j + " i = " + i + " val = " + val + " jitter = " + jitter);
 			if (jitter == 0) {
 				cmdList.push(makeCmdString('L', rowStartX + direction*(i+1)*scaleFactor, rowBaseY));
 			} else {
 				var jitterWidth = scaleFactor/jitter;
 				var dx = jitterWidth/2;
-				var jhscale = jh*intensity;
+				var jhscale = jh*jitter/maxStrokes;  // try scaling jitter height with intensity
+				//var jhscale = jh;
 				var pixelStartX = rowStartX + direction*i*scaleFactor;
 				for (var k = 0; k < jitter; k++) {
 					cmdList.push(makeCmdString('L', pixelStartX + k*jitterWidth*direction, rowBaseY + jhscale));
