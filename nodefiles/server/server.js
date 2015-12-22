@@ -3,6 +3,7 @@ var app = require('http').createServer(handler),
   fs = require('fs'),
   url = require('url'),
   rl = require('readline'),
+  path = require('path'),
   serialport = require("serialport"),
   // Cache of commands to send to arduino
   cmdList = [];
@@ -61,7 +62,7 @@ var app = require('http').createServer(handler),
       pathname = 'client.html';
 	
 	// right now there is only the client.html file, but we could serve others in the future
-    fs.readFile('./client/' + pathname, function(err, data) {
+    fs.readFile('.' + path.sep + 'client' + path.sep + pathname, function(err, data) {
       if (err) {
         console.log(err);
         res.writeHead(500);
@@ -172,7 +173,7 @@ function handler(req, res) {
   // Serve favicon file when requested
   if (req.url === '/favicon.ico') {
     res.writeHead(200, {'Content-Type': 'image/x-icon'} );
-	var img = fs.readFileSync('./server/favicon.ico');
+	var img = fs.readFileSync('.' + path.sep + 'server' + path.sep + 'favicon.ico');
     res.end(img, 'binary');
     //console.log('favicon requested');
     return;
