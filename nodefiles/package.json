@@ -1,10 +1,10 @@
 {
   "name": "etchabot",
   "version": "1.0.0",
-  "description": "EtchABot image drawing applicatoin",
-  "main": "server\\server.js",
+  "description": "EtchABot image drawing application",
+  "main": "server/server.js",
   "scripts": {
-    "start":"node .\\Server\\server.js",
+    "start":"node ./server/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
