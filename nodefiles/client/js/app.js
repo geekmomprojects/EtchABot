@@ -235,6 +235,8 @@ function getIntegersFromString(str) {
 	return numList;
 }
 
+// Function to display what is currently being drawn on the screen.
+// TBD - write this function
 var drawStylusPosition = function(data) {
 	// Get the context to draw the line at
 	var imDisp = document.getElementById('imDisplay');
@@ -255,7 +257,7 @@ var onSocketNotification = function(display) {
 			//alert("Setting display size to [" + w + ", " + h + "]");
 			display.size = [w,h];
 			display.center = [(display.origin[0] + w)/2, (display.origin[1] + h)/2];
-		} else if (cmd == 'b') {  //Receiving backlash info
+		} else if (cmd == 'b' || cmd == 'B') {  //Receiving backlash info
 			var numList = getIntegersFromString(data.substring(2));
 			if (numList.length) {
 				document.getElementById('xBacklash').innerHTML = "Horz: " + numList[0];
@@ -393,18 +395,33 @@ var svgToCmdList = function(svg, display, cmdList) {
 
 	// Last command returns pen to origin - may want to take a cleaner route back (TBD???)
 	cmdList.push(makeCmdString('M', 0, 0)); 
-	cmdList.push('O EHV');  // Turn off motors when done	
-	
-	// Draw the lines from the command list
+	cmdList.push('O EHV');  // Turn off motors when done
+
+    // Render drawing commands to screen.  Red lines indicate 'Move', and
+	//  black lines indicate 'Line'
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
 	ctx.beginPath();
-	ctx.moveTo(0, 0);
-	for (var i = 0; i < screenCoords.length; i++) {
+	ctx.moveTo(0,0);
+	for (var i = 0; i < screenCoords.length-1; i++) {
 		var p = screenCoords[i];
-		ctx.lineTo(Math.round(p[0]), Math.round(p[1]));
-	}	
+		var curDrawMode = p[2];
+		var nextDrawMode = screenCoords[i+1][2];
+		if (nextDrawMode == curDrawMode) {
+			ctx.lineTo(Math.round(p[0]), Math.round(p[1]));
+		} else {
+			//alert(curDrawMode);
+			ctx.lineTo(Math.round(p[0]), Math.round(p[1]));
+			ctx.strokeStyle = (curDrawMode == 'M' ? 'Red' : 'Black');
+			ctx.lineWidth = 0.5;
+			ctx.stroke();
+			ctx.beginPath();
+			ctx.moveTo(Math.round(p[0]), Math.round(p[1]));
+		}
+	}
+	var p = screenCoords[screenCoords.length-1];
+	ctx.lineTo(Math.round(p[0]), Math.round(p[1]));
+	ctx.strokeStyle = (p[2] == 'M' ? 'Red' : 'Black');
 	ctx.lineWidth = 0.5;
-	ctx.strokeStyle = 'Black';
 	ctx.stroke();
 
 	return cmdList.length;
@@ -489,8 +506,16 @@ function makeGrayscaleImage(im) {
 	return canvas.toDataURL();
 }
 
+// Converts the raster image to a series of drawing commands
+//  that renders the current image crosshatch style.  Not for
+//  use with EtchABot, but works well with a V-plotter 
+var imgToCrosshatchCmds = function(img, display, cmdList) {
+}
 
 // Converts the raster image to a series of drawing commands
+//  which render the image in back and forth "jitter" style
+//  where the height of the "jitter" corresponds to the darkness
+//  of the pixel.
 var imgToCmds = function(img, display, cmdList) {
 	// Clear out any old points from cmdList
 	cmdList.length = 0;
