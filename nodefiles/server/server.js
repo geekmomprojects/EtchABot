@@ -131,7 +131,7 @@ var app = require('http').createServer(handler),
 // Creating a new websocket - we need to maintain the command list, and dispatch commands to the Arduino
 //  when there is demand.  Data comes from Arduino - commands come from client.
 io.sockets.on('connection', function(socket) {
-
+	console.log('Socket connection');
 	// Store the connection to the most recent browser to connect.  
 	// Right now I think this means we can only connect to one browser at a time
 	browserSocket = socket;
@@ -180,5 +180,4 @@ function handler(req, res) {
   }
   // Serve the requested page
   readFile(url.parse(req.url).pathname, res);
-  //console.log("handler got request");
 }

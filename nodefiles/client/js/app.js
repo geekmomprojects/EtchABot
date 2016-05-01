@@ -326,7 +326,11 @@ var nodeToCoords = function(node, coordList, hOffset, vOffset) {
 					// Must subtract out window origin
 					p.x -= hOffset;
 					p.y -= vOffset;
-					coordList.push([p.x, p.y]);
+					if (j == 0) {
+						coordList.push([p.x, p.y, 'M']);  //"move" command to get to beginning of each new path
+					} else {
+						coordList.push([p.x, p.y, 'L']);  //"line" command to traverse path
+					}
 				}
 				parent.removeChild(child);
 				break;
@@ -376,7 +380,7 @@ var svgToCmdList = function(svg, display, cmdList) {
 	
 	// Comvert screen coords to command list
 	for (var i = 0; i < screenCoords.length; i++) {
-		cmdList.push(makeCmdString('L', screenCoords[i][0]*scaleFactor, screenCoords[i][1]*scaleFactor));
+		cmdList.push(makeCmdString(screenCoords[i][2], screenCoords[i][0]*scaleFactor, screenCoords[i][1]*scaleFactor));
 	}
 	
 	// Get new drawing context and canvas
@@ -388,7 +392,7 @@ var svgToCmdList = function(svg, display, cmdList) {
 	var ctx = canvas.getContext("2d");
 
 	// Last command returns pen to origin - may want to take a cleaner route back (TBD???)
-	cmdList.push(makeCmdString('L', 0, 0)); 
+	cmdList.push(makeCmdString('M', 0, 0)); 
 	cmdList.push('O EHV');  // Turn off motors when done	
 	
 	// Draw the lines from the command list
@@ -575,7 +579,7 @@ var imgToCmds = function(img, display, cmdList) {
 		else rowStartX = startx + w*scaleFactor;
 		
 		// Move to first pixel in new row
-		cmdList.push(makeCmdString('L', rowStartX, rowBaseY));
+		cmdList.push(makeCmdString('M', rowStartX, rowBaseY));
 		// Traverse the row
 		for (var i = 0; i < w; i++) {
 			var val = rowPixels[i];
@@ -776,7 +780,7 @@ window.onload = function () {
 	
 	// Create socket.  User server's local ip address if connecting from remote machine,
 	// otherwise use localhost if connecting from this machine.
-	//var socket = io.connect('http://192.168.1.16:8000')
+	//var socket = io.connect('http://192.168.1.22:8000')
 	var socket = io.connect('http://localhost:8000');
 	// Set socket listener
 	socket.on('notification', onSocketNotification(display));

@@ -1,2 +1,4 @@
 #Node modules
 nodefiles/node_modules
+#Word documents in design
+design/*.docx
