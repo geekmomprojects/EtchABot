@@ -343,7 +343,6 @@ var nodeToCoords = function(node, coordList, hOffset, vOffset) {
 // Helper function to return the border width of a page element
 var getBorderWidth = function(el) {
 	var border = getComputedStyle(el, null).border;
-	alert(border);
 	if (border === null || border === "") return 0;
 	var parts = border.split(' ');
 	for (i = 0; i < parts.length; i++) {
