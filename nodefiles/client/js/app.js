@@ -343,6 +343,8 @@ var nodeToCoords = function(node, coordList, hOffset, vOffset) {
 // Helper function to return the border width of a page element
 var getBorderWidth = function(el) {
 	var border = getComputedStyle(el, null).border;
+	alert(border);
+	if (border === null || border === "") return 0;
 	var parts = border.split(' ');
 	for (i = 0; i < parts.length; i++) {
 		if (parts[i].indexOf('px') > 0) {
@@ -510,6 +512,8 @@ function makeGrayscaleImage(im) {
 //  that renders the current image crosshatch style.  Not for
 //  use with EtchABot, but works well with a V-plotter 
 var imgToCrosshatchCmds = function(img, display, cmdList) {
+	// Clear out any old points from cmdList
+	cmdList.length = 0;
 }
 
 // Converts the raster image to a series of drawing commands
@@ -671,6 +675,7 @@ var imgToCmdList = function(img, display, cmdList) {
 	var ctx = canvas.getContext("2d");
 	
 	// Let user know they might wait while converting image to commands
+	// TBD - this doesn't work - figure out why
 	ctx.font = "40px Arial";
 	ctx.fillStyle = "red";
 	ctx.textAlign = "center";
